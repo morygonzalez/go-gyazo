@@ -63,15 +63,18 @@ func upload(file multipart.File) (string, error) {
 	io.Copy(hasher, file)
 	hash := hex.EncodeToString(hasher.Sum(nil))
 	filename := fmt.Sprintf("%s.png", hash)
+	contentType := getContentType(file)
 
 	bucketName := os.Getenv("S3_BUCKET_NAME")
 	param := &s3.PutObjectInput{
-		Bucket: &bucketName,
-		Key:    &filename,
-		Body:   file,
+		Bucket:      &bucketName,
+		Key:         &filename,
+		Body:        file,
+		ContentType: aws.String(contentType),
 	}
 	_, err := client.PutObject(param)
 	if err != nil {
+		fmt.Printf("Failed Foo: %s", err)
 		return "", err
 	}
 
@@ -85,4 +88,13 @@ func createClient() *s3.S3 {
 func createConfig() *aws.Config {
 	config := aws.NewConfig().WithCredentials(credentials.NewEnvCredentials())
 	return config
+}
+
+func getContentType(file multipart.File) string {
+	bytes, err := ioutil.ReadAll(file)
+	if err != nil {
+		panic(err)
+	}
+	mimeType := http.DetectContentType(bytes)
+	return mimeType
 }
