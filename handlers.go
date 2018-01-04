@@ -27,6 +27,7 @@ func handlePing(w http.ResponseWriter, r *http.Request) {
 
 func handleUpload(w http.ResponseWriter, r *http.Request) {
 	var err error
+	host := os.Getenv("GYAZO_HOST") || "http://localhost:3000"
 
 	err = r.ParseMultipartForm(UploadBufferSize)
 	if err != nil {
@@ -51,7 +52,7 @@ func handleUpload(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		fmt.Fprintf(w, "http://localhost:3000/%s", filename)
+		fmt.Fprintf(w, "%s/%s.png", host, hash)
 		return
 	}
 
