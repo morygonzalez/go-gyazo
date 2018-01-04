@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"io"
+	"log"
 	"mime/multipart"
 	"net/http"
 	"os"
@@ -51,7 +52,7 @@ func handleUpload(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		fmt.Fprintf(w, "http://localhost:3000/%s", filename)
+		fmt.Fprintf(w, "http://localhost:3000/%s.png", hash)
 		return
 	}
 
@@ -83,6 +84,30 @@ func createClient() *s3.S3 {
 }
 
 func createConfig() *aws.Config {
-	config := aws.NewConfig().WithCredentials(credentials.NewEnvCredentials())
+	cred := getCred()
+	config := aws.NewConfig().WithCredentials(cred)
+	config.Region = aws.String("ap-northeast-1")
 	return config
+}
+
+func getCred() *credentials.Credentials {
+	var cred *credentials.Credentials
+	envCredential := credentials.NewEnvCredentials()
+	envCredValue, err := envCredential.Get()
+	if err != nil {
+		log.Println(err)
+	}
+	sharedCredential := credentials.NewSharedCredentials("", "default")
+	sharedCredValue, err := sharedCredential.Get()
+	if err != nil {
+		log.Println(err)
+	}
+	if envCredValue.AccessKeyID != "" && envCredValue.SecretAccessKey != "" {
+		cred = envCredential
+	} else if sharedCredValue.AccessKeyID != "" && sharedCredValue.SecretAccessKey != "" {
+		cred = sharedCredential
+	} else {
+		log.Panicln("No credentials found")
+	}
+	return cred
 }
